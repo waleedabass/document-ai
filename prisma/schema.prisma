@@ -15,7 +15,9 @@ datasource db {
 model Document {
   id        String   @id @default(cuid())
   filename  String
-  filePath  String   // relative path under /uploads
+  filePath  String   // legacy unique-name identifier, kept for audit — no longer a disk path
+  fileData  Bytes    // the original uploaded file, stored in the DB since the deployed
+                     // runtime has no persistent disk to keep it on
   mimeType  String
   status    String   @default("processing") // "processing" | "needs_review" | "approved" | "exported" | "failed"
   model     String?  // which AI provider/model extracted this
@@ -81,5 +83,6 @@ model Proposal {
   totalPrice  Float
   model       String
   pdfPath     String?
+  pdfData     Bytes?
   createdAt   DateTime @default(now())
 }

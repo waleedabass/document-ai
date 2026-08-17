@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { ingestDocument } from "@/lib/extraction/ingest";
-import { saveUploadedFile, saveProposalPdf } from "@/lib/storage";
+import { generateSafeFilename } from "@/lib/storage";
 import { getExportProvider } from "@/lib/export";
 import { getProposalProvider } from "@/lib/proposals";
 import { renderProposalPdf } from "@/lib/proposals/pdf";
@@ -15,7 +15,7 @@ export async function uploadDocumentsAction(formData: FormData): Promise<void> {
 
   for (const file of files) {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const relativePath = await saveUploadedFile(buffer, file.name);
+    const relativePath = generateSafeFilename(file.name);
     // Sequential on purpose — every provider here has real rate limits
     // (found the hard way across all three of these projects), and a
     // batch upload of several invoices is exactly the kind of burst that
@@ -94,8 +94,10 @@ export async function generateProposalAction(formData: FormData): Promise<void> 
     lineItems: generated.lineItems,
     totalPrice,
   });
-  const pdfPath = await saveProposalPdf(pdfBuffer, proposal.id);
-  await db.proposal.update({ where: { id: proposal.id }, data: { pdfPath } });
+  await db.proposal.update({
+    where: { id: proposal.id },
+    data: { pdfPath: `${proposal.id}.pdf`, pdfData: new Uint8Array(pdfBuffer) },
+  });
 
   revalidatePath("/proposals");
   redirect(`/proposals/${proposal.id}`);

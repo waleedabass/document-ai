@@ -5,7 +5,7 @@ import type { ExtractedFieldName } from "@/lib/enums";
 
 export async function ingestDocument(fileBuffer: Buffer, filename: string, filePath: string, mimeType: string): Promise<string> {
   const document = await db.document.create({
-    data: { filename, filePath, mimeType, status: "processing" },
+    data: { filename, filePath, fileData: new Uint8Array(fileBuffer), mimeType, status: "processing" },
   });
 
   try {
