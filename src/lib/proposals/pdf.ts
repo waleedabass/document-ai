@@ -69,7 +69,7 @@ export async function renderProposalPdf(input: {
   const contentWidth = PAGE_SIZE[0] - MARGIN * 2;
 
   // Header / brand
-  cursor.page.drawText("ARC AUTOMATIONS", { x: MARGIN, y: cursor.y, size: 10, font: bold, color: MUTED });
+  cursor.page.drawText("PIXEL AI SOLUTIONS", { x: MARGIN, y: cursor.y, size: 10, font: bold, color: MUTED });
   cursor = { ...cursor, y: cursor.y - 28 };
   cursor = drawParagraph(cursor, input.projectTitle, { size: 22, font: bold, color: INK, maxWidth: contentWidth, lineGap: 6 });
   cursor = { ...cursor, y: cursor.y - 2 };

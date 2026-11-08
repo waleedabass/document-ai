@@ -1,6 +1,6 @@
 # Back-Office Document AI
 
-A working prototype of ARC Automations' invoice extraction + proposal generation product — the "quiet money-maker" per the brief. Two lanes, both real:
+A working prototype of Pixel AI Solutions' invoice extraction + proposal generation product — the "quiet money-maker" per the brief. Two lanes, both real:
 
 - **Extraction**: drop in a real invoice PDF/image → AI reads it with native vision (no separate OCR step) → structured fields with per-field confidence → plain-code validation rules that catch real invoice math errors independent of how confident the model felt → human review queue with color-coded fields → approve → export.
 - **Generation**: paste a real sales-call brief → AI produces a structured, priced proposal grounded only in what was actually said → rendered into a real branded PDF via `pdf-lib`.
@@ -14,7 +14,7 @@ Nothing here is a mock. Every extraction is a real vision-model call against a r
 - **Side-by-side source and extraction** (`/documents/[id]`) — the original uploaded PDF/image renders next to the extracted fields via `/api/documents/[id]/file`, so a reviewer can actually check a number against the source instead of trusting it blind. Verified live: the file route returns the real bytes, and the iframe renders it at a real, usable size.
 - **The proposal generator** — verified live end-to-end: a real gym-chain brief in, a real 4-section proposal with correctly-priced line items out (stayed under the mentioned budget on its own), downloaded as an actual PDF and visually confirmed to render correctly.
 
-## The same real constraint as the other two ARC projects
+## The same real constraint as the other two Pixel projects
 
 Gemini's free tier caps at 20 requests/day per model; OpenRouter's free `:free` models cap at 50/day. Extraction specifically needs Claude or Gemini (vision) — OpenRouter's free models aren't reliable for document vision, so it's only in the fallback chain for the (text-only) proposal lane. See the other two projects' READMEs for the full story on why these limits matter and how `AI_PROVIDER` auto-detection works.
 
@@ -44,15 +44,22 @@ Then:
 
 ## Architecture notes
 
-- **Same conventions as the other two ARC projects**: Next.js 16 + Prisma 7 with the `@prisma/adapter-better-sqlite3` driver adapter, Server Actions for mutations, provider interfaces (`DocumentExtractionProvider`, `ProposalProvider`, `ExportProvider`) so a real accounting integration slots in without touching business logic. Same 8-color minimal palette across all three, for a portfolio that reads as one body of work.
+- **Same conventions as the other two Pixel projects**: Next.js 16 + Prisma 7 with the `@prisma/adapter-libsql` driver adapter, Server Actions for mutations, provider interfaces (`DocumentExtractionProvider`, `ProposalProvider`, `ExportProvider`) so a real accounting integration slots in without touching business logic. Same 8-color minimal palette across all three, for a portfolio that reads as one body of work.
 - **No separate OCR service.** Claude and Gemini both accept PDF/image input natively and return structured JSON directly — genuinely simpler and more accurate than a classic OCR-then-parse pipeline.
 - **Validation rules run in plain TypeScript, not AI** (`src/lib/extraction/validation.ts`): subtotal + tax ≈ total (rounding-tolerant), due date ≥ invoice date, required fields present. A rule violation forces `needs_review` regardless of the model's own confidence score — those are different claims, and conflating them is exactly how an "average" implementation fools itself into shipping something that looks trustworthy but isn't.
-- **Files stored on local disk** (`/uploads`, `/proposals-pdf`, both gitignored), path referenced in the DB — no S3 dependency needed at prototype scale.
+- **Files stored as database bytes** (`Document.fileData` and `Proposal.pdfData`) so review previews and proposal downloads work on Vercel without a persistent local filesystem.
 - **PDF generation is `pdf-lib`**, not a headless browser — pure JS, no Puppeteer/Playwright dependency, works fine in a serverless-friendly Next.js deployment. Manual text-wrapping and page-break handling (`src/lib/proposals/pdf.ts`) since `pdf-lib` doesn't do layout for you, but that's a small, fully-owned piece of code instead of a heavy rendering dependency.
-- **Real QuickBooks/Xero export is deliberately not built.** Both require registering an OAuth app (a real setup step, not just pasting an API key like every other integration across these three ARC projects) — `src/lib/export/logOnly.ts` is the default, and a real provider slots in behind the same `ExportProvider` interface once that registration exists.
+- **Real QuickBooks/Xero export is deliberately not built.** Both require registering an OAuth app (a real setup step, not just pasting an API key like every other integration across these three Pixel projects) — `src/lib/export/logOnly.ts` is the default, and a real provider slots in behind the same `ExportProvider` interface once that registration exists.
 
 ## Known limitations, on purpose
 
 - Confidence scores are model-reported, not independently calibrated — treat them as "how sure the model says it is," which is exactly why the plain-code validation rules exist as a second, independent check rather than trusting confidence alone.
 - Line items don't get their own confidence-driven review UI yet (only top-level fields do) — they're shown read-only in the review queue. A client build would extend the same color-coding to line items.
 - Proposal line-item pricing is the model's own judgment call grounded in the brief, not pulled from a real rate card — a client deployment would want to ground pricing against actual service rates, not just "realistic B2B agency pricing" as prompted here.
+
+
+## Public Pixel sample
+
+The public entry and `/demo` run editable, browser-isolated sample workflows. No live email, payment, CRM update or paid AI request is made. Records reset on reload. The invoice sample accepts labeled text or JSON objects up to 20 KB, then validates the edited vendor, invoice number, currency, positive amount and calendar date before approval. Existing provider integrations remain available behind explicit private access. Set `ENABLE_LIVE_DEMO=true`, `DATABASE_URL` and a private `PIXEL_LIVE_ACCESS_TOKEN` of at least 32 characters; authenticate internal requests using the `pixel-live-access` cookie or a Bearer header. Keep provider keys server-side. Public POSTs and APIs are blocked. Do not enable integration mode for anonymous visitors.
+
+Run `npm ci`, `npm test`, `npm run lint`, and `npm run build`. Production uses the linked Vercel project.

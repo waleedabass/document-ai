@@ -61,8 +61,8 @@ export function createOpenRouterProposalProvider(apiKey: string): ProposalProvid
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://arcautomations.in",
-            "X-Title": "ARC Automations Document AI",
+            "HTTP-Referer": "https://pixelaisolutions.com",
+            "X-Title": "Pixel AI Solutions Document AI",
           },
           body,
         });

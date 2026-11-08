@@ -139,3 +139,10 @@ An average document-processing tool trusts whatever confidence score the model r
 2. Show the one invoice with a deliberate math error — extraction reads it confidently, but the validation rule flags it anyway. This is the single best "average vs. agency" moment in the whole demo.
 3. Approve a clean one and show it ready for export.
 4. Paste a real sales-call brief and generate a proposal — download the actual PDF.
+
+
+## Public Pixel sample
+
+The public entry and `/demo` run editable, browser-isolated sample workflows. No live email, payment, CRM update or paid AI request is made. Records reset on reload. Existing provider integrations remain available behind explicit private access. Set `ENABLE_LIVE_DEMO=true`, `DATABASE_URL` and a private `PIXEL_LIVE_ACCESS_TOKEN` of at least 32 characters; authenticate internal requests using the `pixel-live-access` cookie or a Bearer header. Keep provider keys server-side. Public POSTs and APIs are blocked. Do not enable integration mode for anonymous visitors.
+
+Run `npm ci`, `npm test`, `npm run lint`, and `npm run build`. Production uses the linked Vercel project.

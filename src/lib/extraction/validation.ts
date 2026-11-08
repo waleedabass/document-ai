@@ -1,3 +1,4 @@
+import { parseMoney } from "../input-validation";
 import type { ExtractedFieldName } from "@/lib/enums";
 import type { ExtractedFieldData } from "./types";
 
@@ -12,10 +13,12 @@ export function validateFields(fields: ExtractedFieldData[]): Map<ExtractedField
   const num = (name: ExtractedFieldName): number | null => {
     const v = byName.get(name);
     if (!v) return null;
-    const n = parseFloat(v.replace(/[^0-9.-]/g, ""));
-    return Number.isFinite(n) ? n : null;
+    try { return parseMoney(v); } catch { return null; }
   };
 
+  for(const name of ['subtotal','tax','total'] as ExtractedFieldName[]) {
+    if(byName.get(name)?.trim() && num(name)===null) warnings.set(name, `${name} must be a valid number.`);
+  }
   const subtotal = num("subtotal");
   const tax = num("tax");
   const total = num("total");
@@ -23,6 +26,13 @@ export function validateFields(fields: ExtractedFieldData[]): Map<ExtractedField
     if (Math.abs(subtotal + tax - total) > 0.02) {
       warnings.set("total", `Subtotal (${subtotal}) + tax (${tax}) = ${(subtotal + tax).toFixed(2)}, doesn't match total (${total}).`);
     }
+  }
+
+  for (const name of ['invoiceDate', 'dueDate'] as ExtractedFieldName[]) {
+    const value = byName.get(name)?.trim();
+    if (!value) continue;
+    const parsed = new Date(value + 'T00:00:00Z');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) warnings.set(name, `${name} must be a valid date in YYYY-MM-DD format.`);
   }
 
   const invoiceDate = byName.get("invoiceDate");
